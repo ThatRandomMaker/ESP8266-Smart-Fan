@@ -1,0 +1,10 @@
+Item Name,Qty,Price (total) (EUR),Item link,Notes
+ESP8266,1,€ 3.46,https://www.aliexpress.com/item/1005008485713481.html,Pick 1pc USB-C or Micro USB (I belive they are the same)
+DHT11 temp Sensor,1,€ 1.73,https://www.aliexpress.com/item/1005005848861388.html,
+ULN2003 PCB,1,€ 1.79,https://www.aliexpress.com/item/1005003211614170.html,
+XL4016 step up conv.,1,€ 3.69,https://www.aliexpress.com/item/1005004469131380.html,"This is overkill. I only used this board because it's the only one I have, any other step up converter will work."
+120mm PC fan,1,€ 4.95,https://www.balticdata.lv/en/datoru-komponentes/korpusa-ventilatori/gembird-fancase3-ball,I belive you can find the same fan in your local store equivalent.
+9V 1A PSU,1,€ 3.91,https://www.aliexpress.com/item/1005004497000966.html,Most 9V 1A PSU(s) will work fine. Mine came from an Arduino kit.
+30AWG wire,1,€ 2.07,https://www.aliexpress.com/item/1005008291260907.html,Any wire in a similiar size will work. Mine is 30AWG because it was my only thin wire lying around.
+Total Price (EUR):,€ 21.60,,,
+"Note: For some reason Excel can't save the spacing in this CSV (for me, atleast)",,,,
