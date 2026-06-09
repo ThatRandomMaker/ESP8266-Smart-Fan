@@ -60,7 +60,7 @@ BOM: [Download](Assets/BOM.csv)
 
 ## Wiring
 
-![How to wire the fan](Assets/wiring.jpg)
+![How to wire the fan](Assets/wiringschematic.jpg)
 
 ## How to flash
 
@@ -113,7 +113,7 @@ Thank you to the developer(s) of the WiFiManager, ESP8266, NTPClient libraries f
 
 
 
-![Smart fan icon](Assets/smartfanicon.png)
+![Smart fan icon](Assets/fanicon.png)
 
 
 
