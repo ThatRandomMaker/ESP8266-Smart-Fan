@@ -5,6 +5,7 @@
   // Flash the code to your ESP8266-12E
   // On first boot, the ESP will create a hotspot named "FanControl". Connect to it from your phone (do not use pc, it redirects to MSN for some reason.), enter your wifi credentials. 
   // It'll save and the wifi network will dissappear, then the dashboard is available on http://fancontrol.local from any device on the same network connection.
+  // If the website doesn't load, check your wifi connections again. If the ESP failed to connect, then it'll reboot and remake the setup hotspot.
   // Upon entering that website in your browser, you'll get to a dashboard showing the current info (Temp, if fan is on, the current temp limit, etc.)
   // If the website doesn't load, graphs or temperature readings are missing, check your serial monitor if you get an error saying "Failed to get a reading from the DHT11, please ensure that your sensor is connected check and if wiring is correct!".
   // From there, you can change anything you'd like (if you are changing the temperature limit, remember to click save) and download the past recorded temperatures in the form of a csv file. (click 24h -> download csv)
@@ -44,9 +45,10 @@
   int historyIndex = 0;
   int dailyCount = 0;
   int dailyIndex = 0;
+  int utcOffset = 10800;
 
   WiFiUDP ntpUDP;
-  NTPClient timeClient(ntpUDP, "pool.ntp.org", 10800);
+  NTPClient timeClient(ntpUDP, "pool.ntp.org", utcOffset);
 
   //Dashboard page
   const char PAGE[] PROGMEM = R"rawhtml(
@@ -118,7 +120,16 @@
     </div>
     <div class="threshold-hint">Fan turns off 2°C below this value</div>
   </div>
-  <button class="btn-save" onclick="saveCurve()">Save Settings</button>
+  
+  <div class="threshold-container">
+    <div class="section-label">Timezone (UTC offset in hours)</div>
+      <div class="threshold-row">
+        <input type="number" id="tzInput" value="3" min="-12" max="14" oninput="tzEditing=true">
+        <span class="threshold-unit">hrs</span>
+      </div>
+      <div class="threshold-hint">e.g. GMT+3 = 3, GMT-5 = -5</div>
+    </div>
+  <button class="btn-save" onclick="saveAll()">Save All Settings</button>
   <div class="toast" id="toast">Saved!</div>
   <script>
     let tempHistory=[];
@@ -126,6 +137,9 @@
     let onTemp=30;
     let userEditing=false;
     let currentTab='realtime';
+    let tzEditing=false;
+
+
 
     function setTab(tab){
       currentTab=tab;
@@ -191,16 +205,20 @@
       ctx.strokeStyle='#00bfae';ctx.lineWidth=2;ctx.stroke();
     }
 
-    function saveCurve(){
-      const v=parseFloat(document.getElementById('onTempInput').value);
-      if(isNaN(v))return;
-      onTemp=v;
-      fetch('/save?ontemp='+v).then(r=>r.text()).then(()=>{
-        userEditing=false;
-        const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2000);
-        drawGraph();
-      });
-    }
+    function saveAll() {
+  const temp = document.getElementById('onTempInput').value;
+  const tz = document.getElementById('tzInput').value;
+  
+
+  fetch(`/saveAll?ontemp=${temp}&offset=${tz*3600}`)
+    .then(r => r.text())
+    .then(() => {
+      const t = document.getElementById('toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2000);
+      drawGraph();
+    });
+}
 
     function pollData(){
       fetch('/data').then(r=>r.json()).then(d=>{
@@ -212,6 +230,7 @@
         fanEl.textContent=d.fanOn?'ON':'OFF';
         fanEl.className='stat-value fan-status '+(d.fanOn?'fan-on':'fan-off');
         if(currentTab==='realtime') drawGraph();
+        if(!tzEditing) document.getElementById('tzInput').value=d.utcOffset;
       }).catch(()=>{});
       if(currentTab==='daily'){
         fetch('/daily').then(r=>r.json()).then(d=>{
@@ -243,6 +262,7 @@
   void saveToFlash() {
     EEPROM.begin(512);
     EEPROM.put(0, onTemp);
+    EEPROM.put(10, utcOffset);
     EEPROM.commit();
     EEPROM.end();
   }
@@ -251,6 +271,11 @@
     EEPROM.begin(512);
     float saved;
     EEPROM.get(0, saved);
+    int savedOffset;
+    EEPROM.get(10, savedOffset);
+    if(savedOffset >= -43200 && savedOffset <= 50400){
+      utcOffset = savedOffset;
+    }
     Serial.println(saved);
     EEPROM.end();
     if(!isnan(saved) && saved > 0 && saved < 100){
@@ -280,19 +305,23 @@
 
     void setup() {
     Serial.begin(115200);
+    delay(1000);
     Serial.println("ready!");
     loadFromFlash();
 
-
     dht.begin();
-
     pinMode(fanPin, OUTPUT);
 
     Serial.println("Starting WiFiManager..");
     WiFiManager wifiManager;
-    wifiManager.setTimeout(60);
     wifiManager.setBreakAfterConfig(true);
-    wifiManager.autoConnect("FanControl");
+    wifiManager.setTimeout(300);
+    if (!wifiManager.autoConnect("FanControl")) {
+      Serial.println("failed to connect!");
+      wifiManager.resetSettings();
+      delay(2500);
+      ESP.reset();
+    }
     Serial.println("Connected to the network.");
     Serial.println(WiFi.localIP());
     MDNS.begin("fancontrol");
@@ -309,6 +338,7 @@
       String json = "{\"temp\":" + String(currentTemp, 1);
       json += ",\"fanOn\":" + String(fanOn ? "true" : "false");
       json += ",\"onTemp\":" + String(onTemp, 1);
+      json += ",\"utcOffset\":" + String(utcOffset / 3600);
       json += ",\"history\":[";
       int start = (historyIndex - historyCount + tempHistorySize) % tempHistorySize;
       for (int i = 0; i < historyCount; i++) {
@@ -319,13 +349,22 @@
       server.send(200, "application/json", json);
     });
 
-    server.on("/save", []() {
+    server.on("/saveAll", []() {
       float newTemp = server.arg("ontemp").toFloat();
       if (newTemp > 0 && newTemp < 100){
         onTemp = newTemp;
         offTemp = newTemp - 2.0;
+        
+      }
+
+      int offset = server.arg("offset").toInt();
+      if(offset >= -43200 && offset <= 50400) {
+        utcOffset = offset;
+        timeClient.setTimeOffset(utcOffset);
         saveToFlash();
       }
+
+      saveToFlash();
       server.send(200, "text/plain", "ok");
     });
 
@@ -360,8 +399,9 @@
       server.send(200, "text/csv", csv);
     });
 
+
     server.begin();
-    Serial.println("Well, at least init was successful.");
+    Serial.println("Well, at least the webpage init was successful. (check prints from WiFiManager the page doesn't open.)");
   }
 
   void loop() {
