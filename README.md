@@ -1,3 +1,6 @@
+# This project is not being worked on anymore, due to a malfunction of the parts.
+## The code is still fully functional, only that I won't be able to provide the 3D model (not made yet), video guides nor the demonstration.
+
 # ESP8266 Smart Fan
 
 
@@ -6,13 +9,13 @@ A WiFi-connected temperature controlled fan for the summer with a web dashboard.
 
 Built with the parts I already had lying around.
 
-![Fully built fan](Assets/fullybuilt.jpg)
+Fully built fan img
 
 
 
 ## Demonstration of the fan:
 
-[![PlaceholderDemonstration](Assets/videoscreenshot.png)](https://youtu.be/h8dtMsmwEIo)
+PlaceholderDemonstration
 
 
 
@@ -56,7 +59,7 @@ BOM: [Download](Assets/BOM.csv)
 
 **Warning**: I don't have a 3D printer to test this model. I cannot confirm if the tolerances are correct nor if it'll work.
 
-[.STEP Download](Assets/Enclosure.step)
+.step temp
 
 ## Wiring
 
@@ -88,7 +91,7 @@ If everything is set up correctly, press upload and wait until it flashes the ES
 
 Video guide:
 
-[![PlaceholderGuide](Assets/videoscreenshot.png)](https://youtu.be/h8dtMsmwEIo)
+PlaceholderGuide
 
 Text guide:
 
