@@ -1,5 +1,5 @@
 # This project is not being worked on anymore, due to a malfunction of the parts.
-## The code is still fully functional, only that I won't be able to provide the 3D model (not made yet), video guides nor the demonstration.
+The code is still fully functional, only that I won't be able to provide the 3D model (not made yet), video guides nor the demonstration.
 
 # ESP8266 Smart Fan
 
